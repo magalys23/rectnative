@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, FlatList, Alert } from "react-native";
+import {View, Text, TextInput,Button, StyleSheet,FlatList, Alert, TouchableOpacity,Modal,} from "react-native";
 
 export default function App() {
   const [codigo, setCodigo] = useState("");
@@ -9,9 +9,11 @@ export default function App() {
   const [productos, setProductos] = useState([]);
   const [editarIndice, setEditarIndice] = useState(-1);
   const [cantidadProductos, setCantidadProductos] = useState(0);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [productoAEliminar, setProductoAEliminar] = useState(null);
 
   const agregarProducto = () => {
-    const repetido = productos.some(producto => producto.codigo === codigo);
+    const repetido = productos.some((producto) => producto.codigo === codigo);
     if (repetido) {
       Alert.alert("Error", "El código del producto ya está en uso");
       return;
@@ -44,32 +46,29 @@ export default function App() {
   };
 
   const eliminarProducto = (indice) => {
-    Alert.alert(
-      "Eliminar producto",
-      "¿Estás seguro de que quieres eliminar este producto?",
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: () => {
-            const nuevosProductos = [...productos];
-            nuevosProductos.splice(indice, 1);
-            setProductos(nuevosProductos);
-            setCantidadProductos(cantidadProductos - 1);
-          },
-        },
-      ]
+    setProductoAEliminar(productos[indice]);
+    setModalVisible(true);
+  };
+
+  const confirmarEliminar = () => {
+    const nuevosProductos = productos.filter(
+      (producto) => producto.codigo !== productoAEliminar.codigo
     );
+    setProductos(nuevosProductos);
+    setCantidadProductos(cantidadProductos - 1);
+    setModalVisible(false);
+    setProductoAEliminar(null);
+  };
+
+  const cerrarModal = () => {
+    setModalVisible(false);
+    setProductoAEliminar(null);
   };
 
   const guardarEdicion = () => {
-    const repetido = productos.some((producto, index) => {
-      return index !== editarIndice && producto.codigo === codigo;
-    });
+    const repetido = productos.some(
+      (producto, index) => index !== editarIndice && producto.codigo === codigo
+    );
     if (repetido) {
       Alert.alert("Error", "El código del producto ya está en uso");
       return;
@@ -148,20 +147,33 @@ export default function App() {
         data={productos}
         keyExtractor={(item) => item.codigo}
         renderItem={({ item, index }) => (
-          <View style={styles.productoContainer}>
-            <Text style={styles.productoText}>{item.producto}</Text>
-            <Text>{`Código: ${item.codigo}`}</Text>
-            <Text>{`Categoría: ${item.categoria}`}</Text>
-            <Text>{`Precio de compra: $${item.precioCompra}`}</Text>
-            <Text>{`Precio de venta: $${item.precioVenta.toFixed(2)}`}</Text>
+          <TouchableOpacity onPress={() => editarProducto(index)}>
+            <View style={styles.productoContainer}>
+              <Text style={styles.productoText}>{item.producto}</Text>
+              <Text>{`Código: ${item.codigo}`}</Text>
+              <Text>{`Categoría: ${item.categoria}`}</Text>
+              <Text>{`Precio de compra: $${item.precioCompra}`}</Text>
+              <Text>{`Precio de venta: $${item.precioVenta.toFixed(2)}`}</Text>
 
-            <View style={styles.botones}>
-              <Button title="Editar" onPress={() => editarProducto(index)} />
-              <Button title="Eliminar" onPress={() => eliminarProducto(index)} />
+              <View style={styles.botones}>
+                <Button title="Eliminar" onPress={() => eliminarProducto(index)} />
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
+
+      <Modal animationType="slide" visible={modalVisible} transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>Está seguro que quiere eliminar?</Text>
+            <View style={styles.modalBotones}>
+              <Button title="Aceptar" onPress={confirmarEliminar} />
+              <Button title="Cancelar" onPress={cerrarModal} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -204,5 +216,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 30,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalBotones: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "50%",
   },
 });
